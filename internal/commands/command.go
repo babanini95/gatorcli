@@ -1,14 +1,17 @@
 package commands
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/babanini95/gatorcli/internal/config"
+	"github.com/babanini95/gatorcli/internal/database"
 )
 
 type state struct {
 	cfg *config.Config
+	db  *database.Queries
 }
 
 type command struct {
@@ -18,6 +21,17 @@ type command struct {
 
 type commands struct {
 	cmds map[string]func(*state, command) error
+}
+
+func (c *commands) generateCommands() {
+	cmds := map[string]func(*state, command) error{
+		"login":    handlerLogin,
+		"register": handlerRegister,
+	}
+
+	for name, fn := range cmds {
+		c.register(name, fn)
+	}
 }
 
 func (c *commands) run(s *state, cmd command) error {
@@ -36,10 +50,6 @@ func (c *commands) run(s *state, cmd command) error {
 
 func (c *commands) register(name string, f func(*state, command) error) {
 	c.cmds[name] = f
-}
-
-func (c *commands) Register() {
-	c.register("login", handlerLogin)
 }
 
 func (c *commands) Run(s *state, args []string) {
@@ -66,6 +76,16 @@ func (s *state) SaveConfig(c *config.Config) {
 	s.cfg = c
 }
 
+func (s *state) CreateQueries() error {
+	db, err := sql.Open("postgres", s.cfg.DbURL)
+	if err != nil {
+		return fmt.Errorf("queries can not be created: %v", err)
+	}
+
+	s.db = database.New(db)
+	return nil
+}
+
 func CreateNewState(c *config.Config) (*state, error) {
 	if c == nil {
 		return &state{}, fmt.Errorf("config is empty")
@@ -74,7 +94,10 @@ func CreateNewState(c *config.Config) (*state, error) {
 }
 
 func InitCommands() *commands {
-	return &commands{
+	cmds := &commands{
 		cmds: make(map[string]func(*state, command) error),
 	}
+
+	cmds.generateCommands()
+	return cmds
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/babanini95/gatorcli/internal/commands"
 	"github.com/babanini95/gatorcli/internal/config"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -21,7 +22,12 @@ func main() {
 		return
 	}
 	appState.SaveConfig(cfg)
+	err = appState.CreateQueries()
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
+
 	cmds := commands.InitCommands()
-	cmds.Register()
 	cmds.Run(appState, os.Args)
 }
