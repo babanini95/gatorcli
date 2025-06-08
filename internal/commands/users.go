@@ -2,10 +2,8 @@ package commands
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/babanini95/gatorcli/internal/database"
 	"github.com/google/uuid"
@@ -41,16 +39,10 @@ func handlerRegister(s *state, cmd command) error {
 	}
 
 	userParams := database.CreateUserParams{
-		ID: uuid.New(),
-		CreatedAt: sql.NullTime{
-			Time:  time.Now(),
-			Valid: true,
-		},
-		UpdatedAt: sql.NullTime{
-			Time:  time.Now(),
-			Valid: true,
-		},
-		Name: userName,
+		ID:        uuid.New(),
+		CreatedAt: sqlCurrentTime(),
+		UpdatedAt: sqlCurrentTime(),
+		Name:      userName,
 	}
 	user, err := s.db.CreateUser(context.Background(), userParams)
 	if err != nil {

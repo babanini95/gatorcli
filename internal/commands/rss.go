@@ -2,11 +2,16 @@ package commands
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"html"
 	"io"
 	"net/http"
+	"os"
+
+	"github.com/babanini95/gatorcli/internal/database"
+	"github.com/google/uuid"
 )
 
 type RSSFeed struct {
@@ -78,5 +83,44 @@ func handlerAgg(s *state, cmd command) error {
 			item.Link,
 		)
 	}
+	return nil
+}
+
+func handlerAddFeed(s *state, cmd command) error {
+	if len(cmd.arguments) < 2 {
+		fmt.Println("Need more arguments!")
+		os.Exit(1)
+	}
+
+	currentUser, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	params := database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: sqlCurrentTime(),
+		UpdatedAt: sqlCurrentTime(),
+		Name: sql.NullString{
+			String: cmd.arguments[0],
+			Valid:  true,
+		},
+		Url: sql.NullString{
+			String: cmd.arguments[1],
+			Valid:  true,
+		},
+		UserID: uuid.NullUUID{
+			UUID:  currentUser.ID,
+			Valid: true,
+		},
+	}
+
+	feed, err := s.db.CreateFeed(context.Background(), params)
+	if err != nil {
+		fmt.Printf("Failed to create feed: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("%v\n", feed)
 	return nil
 }

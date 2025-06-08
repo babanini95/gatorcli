@@ -30,6 +30,7 @@ func (c *commands) generateCommands() {
 		"reset":    handlerReset,
 		"users":    handlerUsers,
 		"agg":      handlerAgg,
+		"addfeed":  handlerAddFeed,
 	}
 
 	for name, fn := range cmds {
