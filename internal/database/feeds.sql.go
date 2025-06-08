@@ -54,3 +54,42 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 	)
 	return i, err
 }
+
+const listFeeds = `-- name: ListFeeds :many
+SELECT 
+    feeds.name, 
+    feeds.url,
+    users.name AS user_name
+FROM users
+RIGHT JOIN feeds
+ON users.id = feeds.user_id
+`
+
+type ListFeedsRow struct {
+	Name     sql.NullString
+	Url      sql.NullString
+	UserName sql.NullString
+}
+
+func (q *Queries) ListFeeds(ctx context.Context) ([]ListFeedsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listFeeds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFeedsRow
+	for rows.Next() {
+		var i ListFeedsRow
+		if err := rows.Scan(&i.Name, &i.Url, &i.UserName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

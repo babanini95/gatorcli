@@ -9,3 +9,12 @@ VALUES (
     $6
 )
 RETURNING *;
+
+-- name: ListFeeds :many
+SELECT 
+    feeds.name, 
+    feeds.url,
+    users.name AS user_name
+FROM users
+RIGHT JOIN feeds
+ON users.id = feeds.user_id;
