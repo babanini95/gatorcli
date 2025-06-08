@@ -65,6 +65,17 @@ func handlerRegister(s *state, cmd command) error {
 	return nil
 }
 
+func handlerReset(s *state, cmd command) error {
+	err := s.db.DeleteAllUser(context.Background())
+	if err != nil {
+		os.Exit(1)
+		return err
+	}
+	fmt.Println("users database reset successfully")
+	os.Exit(0)
+	return nil
+}
+
 func isUserExist(s *state, userName string) bool {
 	u, _ := s.db.GetUser(context.Background(), userName)
 	return u.ID != uuid.Nil

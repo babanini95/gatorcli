@@ -27,6 +27,7 @@ func (c *commands) generateCommands() {
 	cmds := map[string]func(*state, command) error{
 		"login":    handlerLogin,
 		"register": handlerRegister,
+		"reset":    handlerReset,
 	}
 
 	for name, fn := range cmds {
