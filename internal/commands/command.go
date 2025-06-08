@@ -28,6 +28,7 @@ func (c *commands) generateCommands() {
 		"login":    handlerLogin,
 		"register": handlerRegister,
 		"reset":    handlerReset,
+		"users":    handlerUsers,
 	}
 
 	for name, fn := range cmds {

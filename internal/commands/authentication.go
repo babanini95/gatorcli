@@ -76,6 +76,23 @@ func handlerReset(s *state, cmd command) error {
 	return nil
 }
 
+func handlerUsers(s *state, cmd command) error {
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to get all users: %v", err)
+	}
+
+	for _, user := range users {
+		currentUserMark := ""
+		if s.cfg.CurrentUserName == user.Name {
+			currentUserMark = "(current)"
+		}
+		fmt.Printf("* %s %s\n", user.Name, currentUserMark)
+	}
+
+	return nil
+}
+
 func isUserExist(s *state, userName string) bool {
 	u, _ := s.db.GetUser(context.Background(), userName)
 	return u.ID != uuid.Nil
