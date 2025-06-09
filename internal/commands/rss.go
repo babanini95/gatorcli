@@ -92,11 +92,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		os.Exit(1)
 	}
 
-	currentUser, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return err
-	}
-
+	currentUser := s.currentUser()
 	params := database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: sqlCurrentTime(),
@@ -142,5 +138,44 @@ func handlerFeeds(s *state, cmd command) error {
 			(i + 1), feed.Name.String, feed.Url.String, feed.UserName.String,
 		)
 	}
+	return nil
+}
+
+func handlerFollow(s *state, cmd command) error {
+	if len(cmd.arguments) != 1 {
+		fmt.Println("invalid argument")
+		os.Exit(1)
+	}
+
+	urlNullString := sql.NullString{
+		String: cmd.arguments[0],
+		Valid:  true,
+	}
+	feed, err := s.db.GetFeedByUrl(context.Background(), urlNullString)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	currentUser := s.currentUser()
+	params := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: sqlCurrentTime(),
+		UpdatedAt: sqlCurrentTime(),
+		UserID: uuid.NullUUID{
+			UUID:  currentUser.ID,
+			Valid: true,
+		},
+		FeedsID: uuid.NullUUID{
+			UUID: feed.ID,
+		},
+	}
+
+	row, err := s.db.CreateFeedFollow(context.Background(), params)
+	if err != nil {
+		fmt.Printf("Can not create feed follow: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Feed name: %s\nUser: %s\n", row.FeedsName.String, row.UserName)
+
 	return nil
 }
