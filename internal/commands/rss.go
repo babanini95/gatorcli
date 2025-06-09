@@ -117,6 +117,25 @@ func handlerAddFeed(s *state, cmd command) error {
 		os.Exit(1)
 	}
 
+	createFeedFollowParams := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: sqlCurrentTime(),
+		UpdatedAt: sqlCurrentTime(),
+		UserID: uuid.NullUUID{
+			UUID:  currentUser.ID,
+			Valid: true,
+		},
+		FeedID: uuid.NullUUID{
+			UUID:  feed.ID,
+			Valid: true,
+		},
+	}
+	_, err = s.db.CreateFeedFollow(context.Background(), createFeedFollowParams)
+	if err != nil {
+		fmt.Printf("Can not create feed follow: %v\n", err)
+		os.Exit(1)
+	}
+
 	fmt.Printf("%v\n", feed)
 	return nil
 }
@@ -165,8 +184,9 @@ func handlerFollow(s *state, cmd command) error {
 			UUID:  currentUser.ID,
 			Valid: true,
 		},
-		FeedsID: uuid.NullUUID{
-			UUID: feed.ID,
+		FeedID: uuid.NullUUID{
+			UUID:  feed.ID,
+			Valid: true,
 		},
 	}
 
@@ -175,7 +195,28 @@ func handlerFollow(s *state, cmd command) error {
 		fmt.Printf("Can not create feed follow: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("Feed name: %s\nUser: %s\n", row.FeedsName.String, row.UserName)
+	fmt.Printf("Feed name: %s\nUser: %s\n", row.FeedName.String, row.UserName)
+
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command) error {
+	currentUser := s.currentUser()
+	feedsFollow, err := s.db.GetFeedFollowsForUser(
+		context.Background(),
+		uuid.NullUUID{
+			UUID:  currentUser.ID,
+			Valid: true,
+		},
+	)
+
+	if err != nil {
+		os.Exit(1)
+	}
+
+	for _, feed := range feedsFollow {
+		fmt.Printf("%s\n", feed.FeedName.String)
+	}
 
 	return nil
 }

@@ -14,14 +14,7 @@ import (
 
 const createFeed = `-- name: CreateFeed :one
 INSERT INTO feeds (id, created_at, updated_at, name, url, user_id)
-VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6
-)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, created_at, updated_at, name, url, user_id
 `
 
@@ -57,17 +50,16 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 
 const createFeedFollow = `-- name: CreateFeedFollow :one
 WITH inserted_feed_follow AS (
-    INSERT INTO feeds_follow (id, created_at, updated_at, user_id, feeds_id)
+    INSERT INTO feeds_follow (id, created_at, updated_at, user_id, feed_id)
     VALUES ($1, $2, $3, $4, $5)
-    RETURNING id, created_at, updated_at, user_id, feeds_id
+    RETURNING id, created_at, updated_at, user_id, feed_id
 )
-SELECT
-    inserted_feed_follow.id, inserted_feed_follow.created_at, inserted_feed_follow.updated_at, inserted_feed_follow.user_id, inserted_feed_follow.feeds_id,
-    feeds.name AS feeds_name,
+SELECT inserted_feed_follow.id, inserted_feed_follow.created_at, inserted_feed_follow.updated_at, inserted_feed_follow.user_id, inserted_feed_follow.feed_id,
+    feeds.name AS feed_name,
     users.name AS user_name
 FROM inserted_feed_follow
-INNER JOIN feeds ON inserted_feed_follow.feeds_id = feeds.id
-INNER JOIN users ON feeds.user_id = users.id
+    INNER JOIN feeds ON inserted_feed_follow.feed_id = feeds.id
+    INNER JOIN users ON inserted_feed_follow.user_id = users.id
 `
 
 type CreateFeedFollowParams struct {
@@ -75,7 +67,7 @@ type CreateFeedFollowParams struct {
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
 	UserID    uuid.NullUUID
-	FeedsID   uuid.NullUUID
+	FeedID    uuid.NullUUID
 }
 
 type CreateFeedFollowRow struct {
@@ -83,8 +75,8 @@ type CreateFeedFollowRow struct {
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
 	UserID    uuid.NullUUID
-	FeedsID   uuid.NullUUID
-	FeedsName sql.NullString
+	FeedID    uuid.NullUUID
+	FeedName  sql.NullString
 	UserName  string
 }
 
@@ -94,7 +86,7 @@ func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowPara
 		arg.CreatedAt,
 		arg.UpdatedAt,
 		arg.UserID,
-		arg.FeedsID,
+		arg.FeedID,
 	)
 	var i CreateFeedFollowRow
 	err := row.Scan(
@@ -102,15 +94,16 @@ func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowPara
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.UserID,
-		&i.FeedsID,
-		&i.FeedsName,
+		&i.FeedID,
+		&i.FeedName,
 		&i.UserName,
 	)
 	return i, err
 }
 
 const getFeedByUrl = `-- name: GetFeedByUrl :one
-SELECT id, created_at, updated_at, name, url, user_id FROM feeds
+SELECT id, created_at, updated_at, name, url, user_id
+FROM feeds
 WHERE url = $1
 `
 
@@ -128,14 +121,63 @@ func (q *Queries) GetFeedByUrl(ctx context.Context, url sql.NullString) (Feed, e
 	return i, err
 }
 
+const getFeedFollowsForUser = `-- name: GetFeedFollowsForUser :many
+SELECT feeds_follow.id, feeds_follow.created_at, feeds_follow.updated_at, feeds_follow.user_id, feeds_follow.feed_id,
+    users.name AS user_name,
+    feeds.name AS feed_name
+FROM feeds_follow
+    INNER JOIN users ON feeds_follow.user_id = users.id
+    INNER JOIN feeds ON feeds_follow.feed_id = feeds.id
+WHERE feeds_follow.user_id = $1
+`
+
+type GetFeedFollowsForUserRow struct {
+	ID        uuid.UUID
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+	UserID    uuid.NullUUID
+	FeedID    uuid.NullUUID
+	UserName  string
+	FeedName  sql.NullString
+}
+
+func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.NullUUID) ([]GetFeedFollowsForUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedFollowsForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFeedFollowsForUserRow
+	for rows.Next() {
+		var i GetFeedFollowsForUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.UserID,
+			&i.FeedID,
+			&i.UserName,
+			&i.FeedName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFeeds = `-- name: ListFeeds :many
-SELECT 
-    feeds.name, 
+SELECT feeds.name,
     feeds.url,
     users.name AS user_name
 FROM users
-RIGHT JOIN feeds
-ON users.id = feeds.user_id
+    RIGHT JOIN feeds ON users.id = feeds.user_id
 `
 
 type ListFeedsRow struct {

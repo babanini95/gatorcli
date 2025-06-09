@@ -24,7 +24,7 @@ type FeedsFollow struct {
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
 	UserID    uuid.NullUUID
-	FeedsID   uuid.NullUUID
+	FeedID    uuid.NullUUID
 }
 
 type User struct {
