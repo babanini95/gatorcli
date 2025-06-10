@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/babanini95/gatorcli/internal/database"
 	"github.com/google/uuid"
@@ -61,29 +62,22 @@ func fetchFeed(ctx context.Context, feedURL string) (rss *RSSFeed, err error) {
 	return rss, nil
 }
 
-func handlerAgg(s *state, cmd command) error {
-	rss, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+func handlerAgg(s *state, cmd command, user database.User) error {
+	if len(cmd.arguments) != 1 {
+		return fmt.Errorf("invalid argument")
+	}
+
+	timeBetweenReqs, err := time.ParseDuration(cmd.arguments[0])
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf(
-		"%v\n%v\n%v\n",
-		html.UnescapeString(rss.Channel.Title),
-		html.UnescapeString(rss.Channel.Description),
-		rss.Channel.Link,
-	)
+	fmt.Printf("Collecting feeds every %s\n", timeBetweenReqs.String())
+	ticker := time.NewTicker(timeBetweenReqs)
 
-	for _, item := range rss.Channel.Item {
-		fmt.Printf(
-			"%v\n%v\n%v\n%v\n",
-			html.UnescapeString(item.Title),
-			html.UnescapeString(item.Description),
-			item.PubDate,
-			item.Link,
-		)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s, user)
 	}
-	return nil
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {
@@ -240,6 +234,36 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 		fmt.Printf("Failed to delete feeds follow:\n%v\n", err)
 		os.Exit(1)
 	}
+
+	return nil
+}
+
+func scrapeFeeds(s *state, user database.User) error {
+	feed, err := s.db.GetNextFeedToFetch(context.Background(), uuid.NullUUID{
+		UUID:  user.ID,
+		Valid: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = s.db.MarkFeedFetched(context.Background(), database.MarkFeedFetchedParams{
+		LastFetchedAt: sqlCurrentTime(),
+		ID:            feed.ID,
+	})
+	if err != nil {
+		return err
+	}
+
+	rss, err := fetchFeed(context.Background(), feed.Url.String)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("\nFeed from %s\n", html.UnescapeString(rss.Channel.Title))
+	for _, item := range rss.Channel.Item {
+		fmt.Printf("- %s\n", html.UnescapeString(item.Title))
+	}
+	fmt.Println("----------------------------------------")
 
 	return nil
 }

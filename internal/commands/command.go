@@ -29,7 +29,7 @@ func (c *commands) generateCommands() {
 		"register":  handlerRegister,
 		"reset":     handlerReset,
 		"users":     handlerUsers,
-		"agg":       handlerAgg,
+		"agg":       middlewareLoggedIn(handlerAgg),
 		"addfeed":   middlewareLoggedIn(handlerAddFeed),
 		"feeds":     handlerFeeds,
 		"follow":    middlewareLoggedIn(handlerFollow),
