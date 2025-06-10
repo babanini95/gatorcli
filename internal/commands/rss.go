@@ -218,3 +218,28 @@ func handlerFollowing(s *state, cmd command, user database.User) error {
 
 	return nil
 }
+
+func handlerUnfollow(s *state, cmd command, user database.User) error {
+	if len(cmd.arguments) != 1 {
+		fmt.Println("Invalid arguments")
+		os.Exit(1)
+	}
+
+	params := database.DeleteFeedFollowsByUrlParams{
+		UserID: uuid.NullUUID{
+			UUID:  user.ID,
+			Valid: true,
+		},
+		Url: sql.NullString{
+			String: cmd.arguments[0],
+			Valid:  true,
+		},
+	}
+	err := s.db.DeleteFeedFollowsByUrl(context.Background(), params)
+	if err != nil {
+		fmt.Printf("Failed to delete feeds follow:\n%v\n", err)
+		os.Exit(1)
+	}
+
+	return nil
+}

@@ -34,6 +34,7 @@ func (c *commands) generateCommands() {
 		"feeds":     handlerFeeds,
 		"follow":    middlewareLoggedIn(handlerFollow),
 		"following": middlewareLoggedIn(handlerFollowing),
+		"unfollow":  middlewareLoggedIn(handlerUnfollow),
 	}
 
 	for name, fn := range cmds {
