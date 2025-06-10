@@ -30,10 +30,10 @@ func (c *commands) generateCommands() {
 		"reset":     handlerReset,
 		"users":     handlerUsers,
 		"agg":       handlerAgg,
-		"addfeed":   handlerAddFeed,
+		"addfeed":   middlewareLoggedIn(handlerAddFeed),
 		"feeds":     handlerFeeds,
-		"follow":    handlerFollow,
-		"following": handlerFollowing,
+		"follow":    middlewareLoggedIn(handlerFollow),
+		"following": middlewareLoggedIn(handlerFollowing),
 	}
 
 	for name, fn := range cmds {

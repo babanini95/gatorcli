@@ -86,13 +86,12 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.arguments) < 2 {
 		fmt.Println("Need more arguments!")
 		os.Exit(1)
 	}
 
-	currentUser := s.currentUser()
 	params := database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: sqlCurrentTime(),
@@ -106,7 +105,7 @@ func handlerAddFeed(s *state, cmd command) error {
 			Valid:  true,
 		},
 		UserID: uuid.NullUUID{
-			UUID:  currentUser.ID,
+			UUID:  user.ID,
 			Valid: true,
 		},
 	}
@@ -122,7 +121,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		CreatedAt: sqlCurrentTime(),
 		UpdatedAt: sqlCurrentTime(),
 		UserID: uuid.NullUUID{
-			UUID:  currentUser.ID,
+			UUID:  user.ID,
 			Valid: true,
 		},
 		FeedID: uuid.NullUUID{
@@ -160,7 +159,7 @@ func handlerFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.arguments) != 1 {
 		fmt.Println("invalid argument")
 		os.Exit(1)
@@ -170,18 +169,18 @@ func handlerFollow(s *state, cmd command) error {
 		String: cmd.arguments[0],
 		Valid:  true,
 	}
+
 	feed, err := s.db.GetFeedByUrl(context.Background(), urlNullString)
 	if err != nil {
 		os.Exit(1)
 	}
 
-	currentUser := s.currentUser()
 	params := database.CreateFeedFollowParams{
 		ID:        uuid.New(),
 		CreatedAt: sqlCurrentTime(),
 		UpdatedAt: sqlCurrentTime(),
 		UserID: uuid.NullUUID{
-			UUID:  currentUser.ID,
+			UUID:  user.ID,
 			Valid: true,
 		},
 		FeedID: uuid.NullUUID{
@@ -200,12 +199,11 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
-	currentUser := s.currentUser()
+func handlerFollowing(s *state, cmd command, user database.User) error {
 	feedsFollow, err := s.db.GetFeedFollowsForUser(
 		context.Background(),
 		uuid.NullUUID{
-			UUID:  currentUser.ID,
+			UUID:  user.ID,
 			Valid: true,
 		},
 	)
