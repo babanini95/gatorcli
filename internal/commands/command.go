@@ -25,16 +25,16 @@ type commands struct {
 
 func (c *commands) generateCommands() {
 	cmds := map[string]func(*state, command) error{
-		"login":     handlerLogin,
-		"register":  handlerRegister,
 		"reset":     handlerReset,
+		"register":  handlerRegister,
+		"login":     handlerLogin,
 		"users":     handlerUsers,
-		"agg":       middlewareLoggedIn(handlerAgg),
-		"addfeed":   middlewareLoggedIn(handlerAddFeed),
 		"feeds":     handlerFeeds,
+		"addfeed":   middlewareLoggedIn(handlerAddFeed),
 		"follow":    middlewareLoggedIn(handlerFollow),
 		"following": middlewareLoggedIn(handlerFollowing),
 		"unfollow":  middlewareLoggedIn(handlerUnfollow),
+		"agg":       middlewareLoggedIn(handlerAgg),
 		"browse":    middlewareLoggedIn(handlerBrowse),
 	}
 

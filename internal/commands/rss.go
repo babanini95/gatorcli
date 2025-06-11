@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/babanini95/gatorcli/internal/database"
@@ -259,7 +260,12 @@ func handlerBrowse(s *state, cmd command, user database.User) error {
 	}
 
 	for _, post := range posts {
-		fmt.Printf("Title:%s\nDescription: %s\nURL: %s\n", post.Title.String, post.Description.String, post.Url.String)
+		fmt.Printf("\nTitle:  %s\nDescription:  %s\nURL:  %s\nPublished at: %s\n",
+			post.Title.String,
+			post.Description.String,
+			post.Url.String,
+			post.PublishedAt.Time.String(),
+		)
 	}
 	return nil
 }
@@ -285,7 +291,7 @@ func scrapeFeeds(s *state, user database.User) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("\nFeed from %s\n", html.UnescapeString(rss.Channel.Title))
+
 	for _, item := range rss.Channel.Item {
 		postParams := database.CreatePostParams{
 			ID:          uuid.New(),
@@ -304,9 +310,12 @@ func scrapeFeeds(s *state, user database.User) error {
 		postParams.PublishedAt = sql.NullTime{Time: pubAt, Valid: true}
 
 		if err = s.db.CreatePost(context.Background(), postParams); err != nil {
-			return nil
+			errStr := err.Error()
+			if !strings.Contains(errStr, "duplicate key") {
+				fmt.Printf("err: %v\nitem: %s", err, item.Title)
+			}
 		}
-		fmt.Printf("Successfully save %s to database\n", html.UnescapeString(item.Title))
+		fmt.Printf("Successfully save \"%s\" to database\n", html.UnescapeString(item.Title))
 	}
 	fmt.Println("----------------------------------------")
 
