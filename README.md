@@ -39,7 +39,7 @@ cd gatorcli
 go mod download
 ```
 
-3. Set up your PostgreSQL database and [configure](##Configuration)
+3. Set up your PostgreSQL database and [configure](#configuration)
 
 4. Run database migrations:
 ```bash
