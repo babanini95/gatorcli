@@ -11,3 +11,10 @@ func sqlCurrentTime() sql.NullTime {
 		Valid: true,
 	}
 }
+
+func sqlString(s string) sql.NullString {
+	return sql.NullString{
+		String: s,
+		Valid:  s != "",
+	}
+}
