@@ -23,22 +23,22 @@ type commands struct {
 	cmds map[string]func(*state, command) error
 }
 
-func (c *commands) generateCommands() {
-	cmds := map[string]func(*state, command) error{
-		"reset":     handlerReset,
-		"register":  handlerRegister,
-		"login":     handlerLogin,
-		"users":     handlerUsers,
-		"feeds":     handlerFeeds,
-		"addfeed":   middlewareLoggedIn(handlerAddFeed),
-		"follow":    middlewareLoggedIn(handlerFollow),
-		"following": middlewareLoggedIn(handlerFollowing),
-		"unfollow":  middlewareLoggedIn(handlerUnfollow),
-		"agg":       middlewareLoggedIn(handlerAgg),
-		"browse":    middlewareLoggedIn(handlerBrowse),
-	}
+var commandMap = map[string]func(*state, command) error{
+	"reset":     handlerReset,
+	"register":  handlerRegister,
+	"login":     handlerLogin,
+	"users":     handlerUsers,
+	"feeds":     handlerFeeds,
+	"addfeed":   middlewareLoggedIn(handlerAddFeed),
+	"follow":    middlewareLoggedIn(handlerFollow),
+	"following": middlewareLoggedIn(handlerFollowing),
+	"unfollow":  middlewareLoggedIn(handlerUnfollow),
+	"agg":       middlewareLoggedIn(handlerAgg),
+	"browse":    middlewareLoggedIn(handlerBrowse),
+}
 
-	for name, fn := range cmds {
+func (c *commands) generateCommands() {
+	for name, fn := range commandMap {
 		c.register(name, fn)
 	}
 }
