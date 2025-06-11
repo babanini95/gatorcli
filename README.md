@@ -169,9 +169,9 @@ gator agg 5m
 gator browse 10
 ```
 
-## Configuration (Coming Soon)
+## Configuration
 
-Need to add details about configuration files, environment variables, and database connection settings
+(Coming Soon) Need to add details about configuration files, environment variables, and database connection settings
 
 ## Database Schema
 
@@ -179,7 +179,7 @@ The application uses PostgreSQL with the following main tables:
 - `users` - User accounts
 - `feeds` - RSS feed information
 - `posts` - Aggregated posts from feeds
-- `feed_follows` - User-feed relationships
+- `feeds_follows` - User-feed relationships
 
 ## Development
 
